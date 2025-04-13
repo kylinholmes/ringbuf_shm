@@ -31,7 +31,7 @@ namespace shm_helper {
 
         shm_t(int fd): fd(fd), size(0), ptr(nullptr) {}
         shm_t() = default;
-        static shm_t* create(const char* key, size_t size) noexcept {
+        static shm_t* create(const char* key, size_t size=4096) noexcept {
             int fd = shm_open(key,  O_RDWR | O_CREAT | O_EXCL , S_IRUSR | S_IWUSR);
             if (fd == -1 && errno == EEXIST) {
                 fd = shm_open(key, O_RDWR, S_IRUSR | S_IWUSR);
@@ -49,7 +49,7 @@ namespace shm_helper {
                 delete shm;
                 return nullptr;
             }
-            printf("[create] fd: %d, key: %s, size: %zu\n", fd, key, size);
+            // printf("[create] fd: %d, key: %s, size: %zu\n", fd, key, size);
             return shm;
         }
         bool shm_truncate(size_t size_in_bytes) noexcept {

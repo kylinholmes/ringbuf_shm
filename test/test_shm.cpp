@@ -55,13 +55,15 @@ void consumer(ringbuf::ringbuf_t<4096>& rb, ringbuf::ringbuf_t<4096>& rb2) {
 
 int main() {
     // Create a shared memory object
-    auto shm = std::make_unique<shm_helper::shm_t*>(shm_helper::shm_t::create("/ringbuf_shm", 1024));
+    auto shm = std::make_unique<shm_helper::shm_t*>(shm_helper::shm_t::create("/ringbuf_shm"));
     if (*shm == nullptr) {
         printf("Failed to create shared memory, errno: %d, %s\n", errno, strerror(errno));
         return -1;
     }
-    // ringbuf::ringbuf_t<4096> ping2pong("/kylin/ringbuf_ping2pong");
-    // ringbuf::ringbuf_t<4096> pong2ping("/kylin/ringbuf_pong2ping");
+    ringbuf::ringbuf_t<> ping2pong("/ping2pong");
+    ringbuf::ringbuf_t<> pong2ping("/pong2ping");
+    ping2pong.push(1);
+    ping2pong.push(2);
     // // Create a producer and consumer thread
     // std::thread producer_thread(producer, std::ref(ping2pong), std::ref(pong2ping));
     // std::thread consumer_thread(consumer, std::ref(ping2pong), std::ref(pong2ping));
