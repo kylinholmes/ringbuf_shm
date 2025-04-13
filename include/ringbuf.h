@@ -52,14 +52,15 @@ struct ringbuf_t {
 
     template<typename T, size_t N = sizeof(T)>
     bool push(T data) {
-        auto size = (persist->tail + MAX_SIZE - persist->head) % MAX_SIZE;
+        size_t h = persist->head;
+        size_t t = persist->tail;
+        auto size = (t + MAX_SIZE - h) % MAX_SIZE;
         if (size + N < MAX_SIZE) {
             for (size_t i = 0; i < N; i++) {
-                size_t t = persist->tail;
                 buffer[t] = ((uint8_t*)&data)[i];
                 t = (t + 1) > MAX_SIZE ? 0 : (t + 1);
-                persist->tail = t;
             }
+            persist->tail = t;
             return true;
         } else {
             return false;
@@ -67,15 +68,17 @@ struct ringbuf_t {
     }
 
     bool pop(size_t N, uint8_t* data) {
+        size_t h = persist->head;
+        size_t t = persist->tail;
         for (size_t i = 0; i < N; i++) {
-            size_t head = persist->head;
-            if (persist->head == persist->tail) {
+            if (h == t) {
+                persist->head = h;                
                 return false; // Buffer is empty
             }
-            data[i] = data[head];
-            head = (head + 1) > MAX_SIZE ? 0 : (head + 1);
-            persist->head = head;
+            data[i] = data[h];
+            h = (h + 1) > MAX_SIZE ? 0 : (h + 1);
         }
+        persist->head = h;
         return true;
     }
 

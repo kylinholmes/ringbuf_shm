@@ -64,6 +64,7 @@ int main() {
     ringbuf::ringbuf_t<> pong2ping("/pong2ping");
     ping2pong.push(1);
     ping2pong.push(2);
+    std::cout << ping2pong.persist->tail << std::endl;
     // // Create a producer and consumer thread
     // std::thread producer_thread(producer, std::ref(ping2pong), std::ref(pong2ping));
     // std::thread consumer_thread(consumer, std::ref(ping2pong), std::ref(pong2ping));
