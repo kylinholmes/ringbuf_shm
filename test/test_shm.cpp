@@ -55,7 +55,7 @@ void consumer(ringbuf::ringbuf_t<4096>& rb, ringbuf::ringbuf_t<4096>& rb2) {
 
 int main() {
     // Create a shared memory object
-    auto shm = std::make_unique<shm_helper::shm_t*>(shm_helper::shm_t::create("/kylin/ringbuf_shm", 16384 * 2));
+    auto shm = std::make_unique<shm_helper::shm_t*>(shm_helper::shm_t::create("/ringbuf_shm", 1024));
     if (*shm == nullptr) {
         printf("Failed to create shared memory, errno: %d, %s\n", errno, strerror(errno));
         return -1;

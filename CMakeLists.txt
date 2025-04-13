@@ -15,3 +15,11 @@ add_executable(
 )
 # set global debug
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -Wall -Wextra -Wpedantic -Werror")
+# OS == linux
+if(UNIX AND NOT APPLE)
+    target_link_libraries(
+        test_shm
+        rt
+    )
+endif()
+
