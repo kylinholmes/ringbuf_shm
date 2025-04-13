@@ -91,6 +91,6 @@ namespace shm_helper {
         }
     };
 
-};
+}
 
 #endif

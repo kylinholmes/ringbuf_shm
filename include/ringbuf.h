@@ -59,6 +59,6 @@ struct ringbuf_t {
 
 };
 
-};
+}
 
 #endif // RINGBUF_H
