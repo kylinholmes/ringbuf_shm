@@ -58,10 +58,11 @@ struct ringbuf_t {
                 k = k - MAX_SIZE;
                 memcpy(buffer + t, data, k);
                 memcpy(buffer, data + k, N - k);
+                persist->tail = N - k;
             } else {
                 memcpy(buffer + t, data, N);
+                persist->tail += N;
             }
-            persist->tail += t;
             return true;
         } else {
             // Buffer is full

@@ -65,7 +65,11 @@ int main() {
     // memcpy(p, str, strlen(str));
     ringbuf::ringbuf_t<> ping2pong("/ping2pong");
     // ringbuf::ringbuf_t<> pong2ping("/pong2ping");
-    ping2pong.push("hello share memory");
+    auto ret = ping2pong.push("hello share memory");
+    if(!ret) {
+        puts("push failed");
+        return -1;
+    }
     auto str = "fuck share memory";
     memcpy(ping2pong.buffer, str, strlen(str));
     // ping2pong.push(2);
