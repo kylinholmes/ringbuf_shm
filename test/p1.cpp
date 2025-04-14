@@ -1,6 +1,7 @@
 #include "shm_helper.hpp"
 #include "ringbuf.hpp"
 #include <cstdio>
+#include <iostream>
 #include <thread>
 
 auto not_ns_ts() {
@@ -15,7 +16,7 @@ int main() {
     for(auto p1=0; p1 < 1000; p1++) {
         auto ts=  not_ns_ts();
         rb.push(ts);
-        printf("%lld\n", ts);
+        std::cout << "p1:" << p1 << ", ts:" << ts << std::endl;
         std::this_thread::sleep_for(1s);
     }
 }

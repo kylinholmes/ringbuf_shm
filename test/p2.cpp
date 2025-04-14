@@ -1,6 +1,7 @@
 #include "shm_helper.hpp"
 #include "ringbuf.hpp"
 #include <cstdio>
+#include <iostream>
 #include <thread>
 
 
@@ -22,7 +23,7 @@ int main() {
             continue;
         }
         auto now = not_ns_ts();
-        printf("now:%lld, p1:%lld, gap:%lld\n", now, p2, now - p2);
+        std::cout << "now:" << now << ", p1:" << p2 << ", gap:" << now - p2 << std::endl;
     }
 }
 
