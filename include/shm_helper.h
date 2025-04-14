@@ -49,7 +49,6 @@ namespace shm_helper {
                 delete shm;
                 return nullptr;
             }
-            // printf("[create] fd: %d, key: %s, size: %zu\n", fd, key, size);
             return shm;
         }
         bool shm_truncate(size_t size_in_bytes) noexcept {
@@ -85,6 +84,11 @@ namespace shm_helper {
                 close(fd);
                 printf("[destroy] fd: %d, key: %s\n", fd, key);
             }
+        }
+        void unlink() noexcept {
+            destroy();
+            shm_unlink(key);
+            printf("[unlink] fd: %d, key: %s\n", fd, key);
         }
         ~shm_t() {
             destroy();

@@ -54,15 +54,21 @@ struct msg {
 //     }
 // }
 
-int main() {
+int test_shm() {
     // Create a shared memory object
     auto shm = std::make_unique<shm_helper::shm_t*>(shm_helper::shm_t::create("/ringbuf_shm"));
     if (*shm == nullptr) {
         printf("Failed to create shared memory, errno: %d, %s\n", errno, strerror(errno));
         return -1;
     }
-    // auto p = (*shm)->ptr;
-    // memcpy(p, str, strlen(str));
+    auto buffer = (*shm)->ptr;
+    auto str = "fuck share memory";
+    memcpy(buffer, str, strlen(str));
+    (*shm)->unlink();
+    return 0;
+}
+
+int test_ring_buffer() {
     ringbuf::ringbuf_t<> ping2pong("/ping2pong");
     // ringbuf::ringbuf_t<> pong2ping("/pong2ping");
     auto ret = ping2pong.push("hello share memory");
@@ -70,8 +76,19 @@ int main() {
         puts("push failed");
         return -1;
     }
-    auto str = "fuck share memory";
-    memcpy(ping2pong.buffer, str, strlen(str));
+    char s[4];
+    ret = ping2pong.pop(s);
+    if (!ret) {
+        puts("pop failed");
+        return -1;
+    }
+    return 0;
+}
+
+int main() {
+    test_shm();
+    test_ring_buffer();
+    
     // ping2pong.push(2);
     // std::cout << ping2pong.persist->tail << std::endl;
     // // Create a producer and consumer thread

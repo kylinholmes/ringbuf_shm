@@ -70,7 +70,12 @@ struct ringbuf_t {
         }
     }
 
-    bool pop(size_t N, uint8_t* data) {
+    template<size_t N>
+    bool pop(const char (&data)[N]) {
+        return pop( static_cast<uint8_t*>((void*) data), N);
+    }
+    
+    bool pop(uint8_t* data, size_t N) {
         size_t h = persist->head;
         auto size = (h + MAX_SIZE - persist->tail) % MAX_SIZE;
         if (size >= N) {
