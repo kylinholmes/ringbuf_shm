@@ -2,6 +2,7 @@
 #define RINGBUF_H
 #include "shm_helper.h"
 
+#include <array>
 #include <cstdio>
 #include <cstring>
 #include <stdexcept>
@@ -17,9 +18,28 @@ namespace ringbuf {
 struct persist_t {
     size_t head;     // Index of the head of the buffer
     size_t tail;     // Index of the tail of the buffer
-    size_t max_size; // Maximum size of the buffer
+    size_t buffer_size; // Maximum size of the buffer
 };
 #pragma pack(pop)
+
+
+struct simple_buf {
+    uint8_t* ptr; // Pointer to the buffer
+    size_t size; // Size of the buffer
+    simple_buf(size_t n) : ptr(new uint8_t[n]), size(n) {}
+    static simple_buf* create([[maybe_unused]]const char* __key, size_t size) noexcept {
+        return new simple_buf(size);
+    }
+    void destroy() {
+        delete[] ptr;
+    }
+    ~simple_buf() {
+        destroy();
+    }
+    simple_buf(const simple_buf&) = delete; // Disable copy constructor
+    simple_buf& operator=(const simple_buf&) = delete; // Disable copy assignment
+};
+
 
 template<size_t MAX_SIZE=4096, typename Allocator=shm_helper::shm_t>
 struct ringbuf_t {
@@ -35,8 +55,8 @@ struct ringbuf_t {
         }
         buffer = static_cast<uint8_t*>(allocator->ptr) + sizeof(persist_t);
         persist = reinterpret_cast<persist_t*>(allocator->ptr);
-        persist->max_size = allocator->size;
-        printf("[ringbuf_t] head:%zu, tail:%zu, max_size:%zu, hptr:%p, ptr:%p\n", persist->head, persist->tail, persist->max_size, reinterpret_cast<void*>(persist), reinterpret_cast<void*>(buffer));
+        persist->buffer_size = allocator->size - sizeof(persist_t);
+        printf("[ringbuf_t] head:%zu, tail:%zu, cap:%zu, hptr:%p, ptr:%p\n", persist->head, persist->tail, persist->buffer_size, reinterpret_cast<void*>(persist), reinterpret_cast<void*>(buffer));
     }
 
     ~ringbuf_t() {
@@ -45,16 +65,23 @@ struct ringbuf_t {
     }
 
     template<size_t N>
-    bool push(const char (&data)[N]) {
-        return push( static_cast<uint8_t*>((void*) data), N);
+    auto push(const char (&data)[N]) {
+        return push( reinterpret_cast<uint8_t*>((void*)data), N);
     }
 
-    bool push(uint8_t* data, size_t N) {
+    /**
+     * @brief 
+     * 
+     * @param data 
+     * @param N 
+     * @return int return 0 if push success, or current used size in buffer
+     */
+    int push(uint8_t* data, size_t N) {
         size_t t = persist->tail;
-        auto size = (t + MAX_SIZE - persist->head) % MAX_SIZE;
-        if (size + N < MAX_SIZE) {
+        auto used = (t + MAX_SIZE - persist->head) % MAX_SIZE;
+        if (used + N < MAX_SIZE) [[likely]] {
             auto k = t + N;
-            if(k > MAX_SIZE) {
+            if(k > MAX_SIZE) [[unlikely]] {
                 k = k - MAX_SIZE;
                 memcpy(buffer + t, data, k);
                 memcpy(buffer, data + k, N - k);
@@ -63,35 +90,43 @@ struct ringbuf_t {
                 memcpy(buffer + t, data, N);
                 persist->tail += N;
             }
-            return true;
+            return 0;
         } else {
             // Buffer is full
-            return false;
+            return used;
         }
     }
 
     template<size_t N>
-    bool pop(const char (&data)[N]) {
-        return pop( static_cast<uint8_t*>((void*) data), N);
+    auto pop(const char (&data)[N]) {
+        return pop( reinterpret_cast<uint8_t*>((void*) data), N);
     }
-    
-    bool pop(uint8_t* data, size_t N) {
+
+    /**
+     * @brief 
+     * 
+     * @param data 
+     * @param N 
+     * @return int return 0 if pop success, or current used size in buffer
+     */
+    int pop(uint8_t* data, size_t N) {
         size_t h = persist->head;
-        auto size = (h + MAX_SIZE - persist->tail) % MAX_SIZE;
-        if (size >= N) {
+        auto used = (persist->tail - h + MAX_SIZE) % MAX_SIZE;
+        if (used >= N) [[likely]] {
             auto k = h + N;
-            if(k > MAX_SIZE) {
+            if(k > MAX_SIZE) [[unlikely]] {
                 k = k - MAX_SIZE;
                 memcpy(data, buffer + h, k);
                 memcpy(data + k, buffer, N - k);
+                persist->head = N - k;
             } else {
                 memcpy(data, buffer + h, N);
+                persist->head += N;
             }
-            persist->head += N;
-            return true;
+            return 0;
         } else {
-            // Buffer is empty
-            return false;
+            // Buffer is empty or not enough data to pop
+            return used;
         }
     }
 

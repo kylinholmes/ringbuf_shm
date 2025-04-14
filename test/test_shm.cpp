@@ -56,7 +56,7 @@ struct msg {
 
 int test_shm() {
     // Create a shared memory object
-    auto shm = std::make_unique<shm_helper::shm_t*>(shm_helper::shm_t::create("/ringbuf_shm"));
+    auto shm = std::make_unique<shm_helper::shm_t*>(shm_helper::shm_t::create("ringbuf_shm"));
     if (*shm == nullptr) {
         printf("Failed to create shared memory, errno: %d, %s\n", errno, strerror(errno));
         return -1;
@@ -68,25 +68,74 @@ int test_shm() {
     return 0;
 }
 
+int test_ring_simple_buffer() {
+    ringbuf::ringbuf_t<64, ringbuf::simple_buf> simp1e_buf("/simple_buffer");
+
+    // push faster than pop, full first
+    for(auto i=0;i < 100; i++) {
+        auto used = simp1e_buf.push("1234");
+        if(used) {
+            printf("puts failed, used_buf_size%d\n", used);
+            break; // less than each push bytes, nerver pop failed
+        }
+        char s[3]; 
+        used = simp1e_buf.pop(s);
+        if(used) {
+            printf("pop failed, used_buf_size:%d\n", used);
+            continue;
+        }
+    }
+
+    // pop faster than push, empty first
+    for(auto i=0;i < 100; i++) {
+        auto used = simp1e_buf.push("1234"); // push 5bytes each times
+        if(used) {
+            printf("puts failed, used_buf_size%d\n", used);
+        }
+        char s[6]; 
+        used = simp1e_buf.pop(s);
+        if(used) {
+            printf("pop failed, rem_buf_size:%d\n", used);
+            break; // greater than each push bytes, nerver push failed
+        }
+    }
+
+    // pop faster than push, nerver stop, empty occur more
+    for(auto i=0;i < 1000; i++) {
+        auto used = simp1e_buf.push("1234");
+        if(used) {
+            printf("puts failed, used_buf_size%d\n", used);
+        }
+        char s[6];
+        used = simp1e_buf.pop(s);
+        if(used) {
+            printf("%d, pop failed, rem_buf_size:%d\n", i, used);
+        }
+    }
+    return 0;
+}
+
 int test_ring_buffer() {
-    ringbuf::ringbuf_t<> ping2pong("/ping2pong");
+    ringbuf::ringbuf_t<64> ping2pong("/ping2pong");
     // ringbuf::ringbuf_t<> pong2ping("/pong2ping");
-    auto ret = ping2pong.push("hello share memory");
+    auto ret = ping2pong.push("hello share memory\0");
     if(!ret) {
         puts("push failed");
         return -1;
     }
-    char s[4];
+    char s[18];
     ret = ping2pong.pop(s);
     if (!ret) {
         puts("pop failed");
         return -1;
     }
+    printf("%s", s);
     return 0;
 }
 
 int main() {
-    test_shm();
+    // test_shm();
+    // test_ring_simple_buffer();
     test_ring_buffer();
     
     // ping2pong.push(2);
