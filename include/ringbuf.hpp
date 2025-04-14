@@ -148,7 +148,7 @@ struct ringbuf_t {
             return 0;
         } else {
             // Buffer is empty or not enough data to pop
-            return used;
+            return used ==0? -1: used;
         }
     }
 
