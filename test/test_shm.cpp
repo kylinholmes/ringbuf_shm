@@ -123,12 +123,13 @@ int test_ring_buffer() {
         puts("push failed");
         return -1;
     }
-    char s[18];
+    char s[19];
     ret = ping2pong.pop(s);
     if (ret) {
         puts("pop failed");
         return -1;
     }
+    s[18] = 0;
     printf("%s", s);
     return 0;
 }
