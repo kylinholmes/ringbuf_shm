@@ -19,6 +19,7 @@ struct persist_t {
     size_t head;     // Index of the head of the buffer
     size_t tail;     // Index of the tail of the buffer
     size_t buffer_size; // Maximum size of the buffer
+    size_t padding;
 };
 #pragma pack(pop)
 

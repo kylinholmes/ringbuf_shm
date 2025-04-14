@@ -119,13 +119,13 @@ int test_ring_buffer() {
     ringbuf::ringbuf_t<64> ping2pong("/ping2pong");
     // ringbuf::ringbuf_t<> pong2ping("/pong2ping");
     auto ret = ping2pong.push("hello share memory\0");
-    if(!ret) {
+    if(ret) {
         puts("push failed");
         return -1;
     }
     char s[18];
     ret = ping2pong.pop(s);
-    if (!ret) {
+    if (ret) {
         puts("pop failed");
         return -1;
     }
