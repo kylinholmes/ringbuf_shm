@@ -20,7 +20,7 @@ add_executable(
 if(UNIX AND NOT APPLE)
     target_link_libraries(
         test_shm
-        rt
+        rt pthread
     )
 endif()
 

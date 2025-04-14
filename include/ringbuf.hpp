@@ -162,7 +162,7 @@ struct ringbuf_t {
             return rb.push(reinterpret_cast<uint8_t*>((void*)data), N);
         }
         template<typename T>
-        int send(const T& data) {
+        int send(const T& data) const {
             return rb.push(reinterpret_cast<uint8_t*>((void*)&data), sizeof(T));
         }
     };
@@ -170,15 +170,15 @@ struct ringbuf_t {
         ringbuf_t<MAX_SIZE, Allocator>& rb;
         public:
         receiver_t(ringbuf_t<MAX_SIZE, Allocator>& rb) : rb(rb) {}
-        int receive(uint8_t* data, size_t size) {
+        int receive(uint8_t* data, size_t size) const {
             return rb.pop(data, size);
         }
         template<size_t N>
-        int receive(char (&data)[N]) {
+        int receive(char (&data)[N]) const {
             return rb.pop(reinterpret_cast<uint8_t*>((void*)data), N);
         }
         template<typename T>
-        int receive(T& data) {
+        int receive(T& data) const {
             return rb.pop(reinterpret_cast<uint8_t*>(&data), sizeof(T));
         }
     };
