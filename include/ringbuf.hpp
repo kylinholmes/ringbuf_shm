@@ -69,6 +69,7 @@ struct ringbuf_t {
         persist->buffer_size = allocator->size - sizeof(persist_t);
         printf("[ringbuf_t] head:%zu, tail:%zu, cap:%zu, hptr:%p, ptr:%p\n", persist->head, persist->tail, persist->buffer_size, reinterpret_cast<void*>(persist), reinterpret_cast<void*>(buffer));
     }
+    ringbuf_t(): ringbuf_t("ringbuf_unnamed_shm") {}
 
     ~ringbuf_t() {
         allocator->destroy();

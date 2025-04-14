@@ -1,58 +1,27 @@
-#include "shm_helper.h"
-#include "ringbuf.h"
+#include "shm_helper.hpp"
+#include "ringbuf.hpp"
 
 #include <cerrno>
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <locale>
 #include <memory>
 #include <iostream>
 #include <thread>
 #include <unistd.h>
+#include <utility>
 
 typedef enum {
     FROM_PING = 1,
     FROM_PONG = 2,
 } msg_type;
 
-struct msg {
-    // unix timestamp
-    uint32_t timestamp;
-    // msg type
-    uint32_t type;
-};
-
-// void producer(ringbuf::ringbuf_t<4096>& rb, ringbuf::ringbuf_t<4096>& rb2) {
-//     uint32_t last_ts = 0;
-//     msg m;
-//     m.timestamp = static_cast<uint32_t>(time(nullptr));
-//     m.type = FROM_PING;
-//     rb.push(m);
-//     last_ts = m.timestamp;
-//     for (int i = 0; i < 10000; i++) {
-//         auto ret = rb2.pop(sizeof(m), (uint8_t*)&m);
-//         if (m.type == FROM_PONG && ret) {
-//             auto rtt = m.timestamp - last_ts;
-//             printf("rtt: %u\n", rtt);
-//             m.timestamp ++;
-//             last_ts = m.timestamp;
-//             m.type = FROM_PING;
-//             rb.push(m);
-//         }
-//     }
-// }
-
-// void consumer(ringbuf::ringbuf_t<4096>& rb, ringbuf::ringbuf_t<4096>& rb2) {
-//     msg m;
-//     for (int i = 0; i < 10000; i++) {
-//         auto ret = rb.pop(sizeof(m), (uint8_t*)&m);
-//         if (m.type == FROM_PING && ret)  {
-//             m.timestamp++;
-//             m.type = FROM_PONG;
-//             rb2.push(m);
-//         }
-//     }
-// }
+auto not_ns_ts() {
+    auto ts = std::chrono::high_resolution_clock::now().time_since_epoch();
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(ts).count();
+}
 
 int test_shm() {
     // Create a shared memory object
@@ -115,29 +84,80 @@ int test_ring_simple_buffer() {
     return 0;
 }
 
-int test_ring_buffer() {
-    ringbuf::ringbuf_t<64> ping2pong("/ping2pong");
-    // ringbuf::ringbuf_t<> pong2ping("/pong2ping");
-    auto ret = ping2pong.push("hello share memory\0");
+int test_ring_buffer_shm() {
+    ringbuf::ringbuf_t<4096, shm_helper::shm_t> shm("/shm");
+    auto ret = shm.push("hello share memory");
     if(ret) {
         puts("push failed");
         return -1;
     }
     char s[19];
-    ret = ping2pong.pop(s);
+    ret = shm.pop(s);
     if (ret) {
         puts("pop failed");
         return -1;
     }
     s[18] = 0;
-    printf("%s", s);
+    printf("%s\n", s);
     return 0;
+}
+
+int test_mulit_thread() {
+    ringbuf::ringbuf_t<4096, shm_helper::shm_t> channel{"/channel"};
+    auto [sender, receiver] = channel.make_pair();
+    struct msg {
+        // unix timestamp
+        uint32_t timestamp;
+        // msg type
+        uint32_t type;
+    };
+
+    ringbuf::ringbuf_t<4096> repoter{};
+    auto [tx, rx] = repoter.make_pair();
+
+    auto producer = std::thread([sender] () {
+        while (true) {
+            msg m;
+            m.timestamp = not_ns_ts();
+            m.type = FROM_PING;
+            auto ret = sender.send(m);
+            if (ret) {
+                printf("send failed, ret:%d\n", ret);
+            }
+            sleep(1);
+        }
+    });
+
+    auto consumer = std::thread([receiver, tx] () {
+        while (true) {
+            msg m;
+            auto ret = receiver.receive(m);
+            if (ret) {
+                printf("receive failed, ret:%d\n", ret);
+            }
+            auto ts =  not_ns_ts();
+            auto rtt = ts - m.timestamp;
+            tx.send(rtt);
+        }
+    });
+
+    while(true) {
+        uint32_t rtt;
+        auto ret = rx.receive(rtt);
+        if (ret) {
+            printf("receive failed, ret:%d\n", ret);
+        }
+        printf("rtt: %u\n", rtt);
+    }
+
 }
 
 int main() {
     // test_shm();
     // test_ring_simple_buffer();
-    test_ring_buffer();
+    // test_ring_buffer_shm();
+    test_mulit_thread();
+
     
     // ping2pong.push(2);
     // std::cout << ping2pong.persist->tail << std::endl;
