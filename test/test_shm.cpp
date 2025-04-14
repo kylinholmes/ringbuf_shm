@@ -4,6 +4,7 @@
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <memory>
 #include <iostream>
 #include <thread>
@@ -60,11 +61,14 @@ int main() {
         printf("Failed to create shared memory, errno: %d, %s\n", errno, strerror(errno));
         return -1;
     }
-    ringbuf::ringbuf_t<> ping2pong("/ping2pong");
-    ringbuf::ringbuf_t<> pong2ping("/pong2ping");
-    ping2pong.push(1);
-    ping2pong.push(2);
-    std::cout << ping2pong.persist->tail << std::endl;
+    auto p = (*shm)->ptr;
+    auto str = "hello share memory";
+    memcpy(p, str, strlen(str));
+    // ringbuf::ringbuf_t<> ping2pong("/ping2pong");
+    // ringbuf::ringbuf_t<> pong2ping("/pong2ping");
+    // ping2pong.push(1);
+    // ping2pong.push(2);
+    // std::cout << ping2pong.persist->tail << std::endl;
     // // Create a producer and consumer thread
     // std::thread producer_thread(producer, std::ref(ping2pong), std::ref(pong2ping));
     // std::thread consumer_thread(consumer, std::ref(ping2pong), std::ref(pong2ping));

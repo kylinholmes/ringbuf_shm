@@ -52,34 +52,43 @@ struct ringbuf_t {
 
     template<typename T, size_t N = sizeof(T)>
     bool push(T data) {
-        size_t h = persist->head;
         size_t t = persist->tail;
-        auto size = (t + MAX_SIZE - h) % MAX_SIZE;
+        auto size = (t + MAX_SIZE - persist->head) % MAX_SIZE;
         if (size + N < MAX_SIZE) {
-            for (size_t i = 0; i < N; i++) {
-                buffer[t] = ((uint8_t*)&data)[i];
-                t = (t + 1) > MAX_SIZE ? 0 : (t + 1);
+            auto k = t + N;
+            if(k > MAX_SIZE) {
+                k = k - MAX_SIZE;
+                memcpy(buffer + t, &data, k);
+                memcpy(buffer, &data + k, N - k);
+            } else {
+                memcpy(buffer + t, &data, N);
             }
-            persist->tail = t;
+            persist->tail += t;
             return true;
         } else {
+            // Buffer is full
             return false;
         }
     }
 
     bool pop(size_t N, uint8_t* data) {
         size_t h = persist->head;
-        size_t t = persist->tail;
-        for (size_t i = 0; i < N; i++) {
-            if (h == t) {
-                persist->head = h;                
-                return false; // Buffer is empty
+        auto size = (h + MAX_SIZE - persist->tail) % MAX_SIZE;
+        if (size >= N) {
+            auto k = h + N;
+            if(k > MAX_SIZE) {
+                k = k - MAX_SIZE;
+                memcpy(data, buffer + h, k);
+                memcpy(data + k, buffer, N - k);
+            } else {
+                memcpy(data, buffer + h, N);
             }
-            data[i] = data[h];
-            h = (h + 1) > MAX_SIZE ? 0 : (h + 1);
+            persist->head += N;
+            return true;
+        } else {
+            // Buffer is empty
+            return false;
         }
-        persist->head = h;
-        return true;
     }
 
 };
