@@ -79,9 +79,9 @@ struct ringbuf_t {
     int push(uint8_t* data, size_t N) {
         size_t t = persist->tail;
         auto used = (t + MAX_SIZE - persist->head) % MAX_SIZE;
-        if (used + N < MAX_SIZE) [[likely]] {
+        if (used + N < MAX_SIZE) {
             auto k = t + N;
-            if(k > MAX_SIZE) [[unlikely]] {
+            if(k > MAX_SIZE) {
                 k = k - MAX_SIZE;
                 memcpy(buffer + t, data, k);
                 memcpy(buffer, data + k, N - k);
@@ -112,9 +112,9 @@ struct ringbuf_t {
     int pop(uint8_t* data, size_t N) {
         size_t h = persist->head;
         auto used = (persist->tail - h + MAX_SIZE) % MAX_SIZE;
-        if (used >= N) [[likely]] {
+        if (used >= N) {
             auto k = h + N;
-            if(k > MAX_SIZE) [[unlikely]] {
+            if(k > MAX_SIZE) {
                 k = k - MAX_SIZE;
                 memcpy(data, buffer + h, k);
                 memcpy(data + k, buffer, N - k);
