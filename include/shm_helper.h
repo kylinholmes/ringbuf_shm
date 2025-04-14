@@ -77,12 +77,12 @@ namespace shm_helper {
             return true;
         }
         void destroy() noexcept {
-            if (ptr != MAP_FAILED) {
+            if (ptr) {
                 munmap(ptr, size);
+                ptr=nullptr;
             }
             if (fd != -1) {
                 close(fd);
-                shm_unlink(key);
                 printf("[destroy] fd: %d, key: %s\n", fd, key);
             }
         }

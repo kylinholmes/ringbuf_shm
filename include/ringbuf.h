@@ -35,7 +35,7 @@ struct ringbuf_t {
         buffer = static_cast<uint8_t*>(allocator->ptr) + sizeof(persist_t);
         persist = reinterpret_cast<persist_t*>(allocator->ptr);
         persist->max_size = allocator->size;
-        printf("[ringbuf_t] head:%zu, tail:%zu, max_size:%zu, hptr:%p, ptr:%p\n", persist->head, persist->tail, persist->max_size, reinterpret_cast<void*>(persist), buffer);
+        printf("[ringbuf_t] head:%zu, tail:%zu, max_size:%zu, hptr:%p, ptr:%p\n", persist->head, persist->tail, persist->max_size, reinterpret_cast<void*>(persist), reinterpret_cast<void*>(buffer));
     }
 
     ~ringbuf_t() {
@@ -43,18 +43,22 @@ struct ringbuf_t {
         buffer=nullptr;
     }
 
-    template<typename T, size_t N = sizeof(T)>
-    bool push(T data) {
+    template<size_t N>
+    bool push(const char (&data)[N]) {
+        return push( static_cast<uint8_t*>((void*) data), N);
+    }
+
+    bool push(uint8_t* data, size_t N) {
         size_t t = persist->tail;
         auto size = (t + MAX_SIZE - persist->head) % MAX_SIZE;
         if (size + N < MAX_SIZE) {
             auto k = t + N;
             if(k > MAX_SIZE) {
                 k = k - MAX_SIZE;
-                memcpy(buffer + t, &data, k);
-                memcpy(buffer, &data + k, N - k);
+                memcpy(buffer + t, data, k);
+                memcpy(buffer, data + k, N - k);
             } else {
-                memcpy(buffer + t, &data, N);
+                memcpy(buffer + t, data, N);
             }
             persist->tail += t;
             return true;
