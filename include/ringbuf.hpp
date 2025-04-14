@@ -76,8 +76,13 @@ struct ringbuf_t {
         buffer=nullptr;
     }
 
+    template<typename T>
+    int push(const T& data) {
+        return push(reinterpret_cast<uint8_t*>((void*)&data), sizeof(T));
+    }
+
     template<size_t N>
-    auto push(const char (&data)[N]) {
+    int push(const char (&data)[N]) {
         return push( reinterpret_cast<uint8_t*>((void*)data), N);
     }
 
@@ -109,8 +114,13 @@ struct ringbuf_t {
         }
     }
 
+    template<typename T>
+    int pop(T& data) {
+        return pop(reinterpret_cast<uint8_t*>((void*)&data), sizeof(T));
+    }
+
     template<size_t N>
-    auto pop(const char (&data)[N]) {
+    int pop(const char (&data)[N]) {
         return pop( reinterpret_cast<uint8_t*>((void*) data), N);
     }
 

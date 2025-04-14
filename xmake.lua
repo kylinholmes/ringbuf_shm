@@ -17,6 +17,15 @@ target("test_shm")
     add_files("test/test_shm.cpp") -- 添加源文件
     add_links("pthread") -- 链接 pthread 库
 
+target("p1")
+    set_kind("binary") -- 目标类型为可执行文件
+    add_files("test/p1.cpp") -- 添加源文件
+    add_links("pthread") -- 链接 pthread 库
+target("p2")
+    set_kind("binary") -- 目标类型为可执行文件
+    add_files("test/p2.cpp") -- 添加源文件
+    add_links("pthread") -- 链接 pthread 库
+
 -- 如果是 Linux 系统，链接 rt 库
 if is_plat("linux") then
     add_links("rt")
