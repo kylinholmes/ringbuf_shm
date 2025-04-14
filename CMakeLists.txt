@@ -1,3 +1,4 @@
+# CMake will be deprecated in the future in this repo, use xmake instead
 cmake_minimum_required(VERSION 3.10)
 project(ringbuf_shm)
 

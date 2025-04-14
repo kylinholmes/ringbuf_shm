@@ -1,6 +1,7 @@
 **/.cache
 **/build
 **/.DS_Store
+.xmake
 
 # Prerequisites
 *.d
