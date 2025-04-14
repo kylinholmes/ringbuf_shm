@@ -35,7 +35,7 @@ struct ringbuf_t {
         buffer = static_cast<uint8_t*>(allocator->ptr) + sizeof(persist_t);
         persist = reinterpret_cast<persist_t*>(allocator->ptr);
         persist->max_size = allocator->size;
-        printf("[ringbuf_t] head:%zu, tail:%zu, max_size:%zu, hptr:%p, ptr:%p\n", persist->head, persist->tail, persist->max_size, persist, buffer);
+        printf("[ringbuf_t] head:%zu, tail:%zu, max_size:%zu, hptr:%p, ptr:%p\n", persist->head, persist->tail, persist->max_size, reinterpret_cast<void*>(persist), buffer);
     }
 
     ~ringbuf_t() {
