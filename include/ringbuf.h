@@ -20,10 +20,6 @@ struct persist_t {
 
 template<size_t MAX_SIZE=4096, typename Allocator=shm_helper::shm_t>
 struct ringbuf_t {
-    // persist_t persist; // Pointer to the persist structure
-    // size_t head;     // Index of the head of the buffer
-    // size_t tail;     // Index of the tail of the buffer
-    // size_t max_size; // Maximum size of the buffer
     persist_t *persist; // Pointer to the persist structure
     uint8_t *buffer; // Pointer to the buffer
     Allocator* allocator; // Allocator for shared memory
@@ -39,10 +35,7 @@ struct ringbuf_t {
         buffer = static_cast<uint8_t*>(allocator->ptr) + sizeof(persist_t);
         persist = reinterpret_cast<persist_t*>(allocator->ptr);
         persist->max_size = allocator->size;
-        // head = p.head;
-        // tail = p.tail;
-        // max_size = allocator->size;
-        printf("[ringbuf_t] head:%zu, tail:%zu, max_size:%zu\n", persist->head, persist->tail, persist->max_size);
+        printf("[ringbuf_t] head:%zu, tail:%zu, max_size:%zu, hptr:%p, ptr:%p\n", persist->head, persist->tail, persist->max_size, persist, buffer);
     }
 
     ~ringbuf_t() {
