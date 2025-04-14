@@ -1,14 +1,24 @@
+/**
+ * @file ringbuf.hpp
+ * @author kylin (you@domain.com)
+ * @brief 
+ * @version 0.1
+ * @date 2025-04-15
+ * 
+ * @copyright Copyright (c) 2025
+ * 
+ */
+
 #ifndef RINGBUF_H
 #define RINGBUF_H
-#include "shm_helper.h"
+// #include "shm_helper.hpp"
 
-#include <array>
 #include <cstdio>
 #include <cstring>
 #include <stdexcept>
 #include <cstddef>
 #include <cstdint>
-#include <type_traits>
+#include <utility>
 
 
 namespace ringbuf {
@@ -42,7 +52,7 @@ struct simple_buf {
 };
 
 
-template<size_t MAX_SIZE=4096, typename Allocator=shm_helper::shm_t>
+template<size_t MAX_SIZE=4096, typename Allocator=simple_buf>
 struct ringbuf_t {
     persist_t *persist; // Pointer to the persist structure
     uint8_t *buffer; // Pointer to the buffer
@@ -131,6 +141,50 @@ struct ringbuf_t {
         }
     }
 
+    size_t size() const {
+        return (persist->tail - persist->head + MAX_SIZE) % MAX_SIZE;
+    }
+    size_t capacity() const {
+        return persist->buffer_size;
+    }
+
+
+    class sender_t {
+        ringbuf_t<MAX_SIZE, Allocator>& rb;
+        public:
+        sender_t(ringbuf_t<MAX_SIZE, Allocator>& rb) : rb(rb) {}
+        int send(const uint8_t* data, size_t size) {
+            return rb.push(data, size);
+        }
+        template<size_t N>
+        int send(const char (&data)[N]) {
+            return rb.push(reinterpret_cast<uint8_t*>((void*)data), N);
+        }
+        template<typename T>
+        int send(const T& data) {
+            return rb.push(reinterpret_cast<uint8_t*>((void*)&data), sizeof(T));
+        }
+    };
+    class receiver_t {
+        ringbuf_t<MAX_SIZE, Allocator>& rb;
+        public:
+        receiver_t(ringbuf_t<MAX_SIZE, Allocator>& rb) : rb(rb) {}
+        int receive(uint8_t* data, size_t size) {
+            return rb.pop(data, size);
+        }
+        template<size_t N>
+        int receive(char (&data)[N]) {
+            return rb.pop(reinterpret_cast<uint8_t*>((void*)data), N);
+        }
+        template<typename T>
+        int receive(T& data) {
+            return rb.pop(reinterpret_cast<uint8_t*>(&data), sizeof(T));
+        }
+    };
+
+    auto make_pair() {
+        return std::make_pair(sender_t(*this), receiver_t(*this));
+    }
 };
 
 }
