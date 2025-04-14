@@ -18,8 +18,6 @@ int main() {
         long long p2;
         auto used = rb.pop(p2);
         if(used) {
-            printf("Buffer is empty, used size: %d\n", used);
-            std::this_thread::sleep_for(1s);
             continue;
         }
         auto now = not_ns_ts();
