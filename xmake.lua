@@ -5,7 +5,8 @@ set_version("1.0.0")
 
 -- 设置全局编译选项
 set_languages("cxx20") -- 使用 C++20 标准
-add_rules("mode.debug", "mode.release") -- 添加调试和发布模式规则
+add_rules("mode.debug", "mode.releasedbg") -- 添加调试和发布模式规则
+set_defaultmode("releasedbg")
 set_warnings("all", "error") -- 开启所有警告并将警告视为错误
 
 -- 添加包含目录
