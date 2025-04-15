@@ -13,7 +13,8 @@ auto not_ns_ts() {
 int main() {
     using namespace std::chrono_literals;
     auto rb = ringbuf::ringbuf_t<4096, shm_helper::shm_t>("my_shm");
-
+    std::iostream::sync_with_stdio(0);
+    
     while(true) {
         long long p2;
         auto used = rb.pop(p2);

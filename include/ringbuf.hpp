@@ -13,6 +13,7 @@
 #define RINGBUF_H
 // #include "shm_helper.hpp"
 
+#include <atomic>
 #include <cstdio>
 #include <cstring>
 #include <stdexcept>
@@ -26,10 +27,10 @@ namespace ringbuf {
 
 #pragma pack(push, 1) 
 struct persist_t {
-    size_t head;     // Index of the head of the buffer
-    size_t tail;     // Index of the tail of the buffer
-    size_t buffer_size; // Maximum size of the buffer
-    size_t padding;
+    std::atomic<size_t> head;     // Index of the head of the buffer
+    std::atomic<size_t> tail;     // Index of the tail of the buffer
+    std::atomic<size_t> buffer_size; // Maximum size of the buffer
+    std::atomic<size_t> padding;
 };
 #pragma pack(pop)
 
@@ -94,18 +95,18 @@ struct ringbuf_t {
      * @return int return 0 if push success, or current used size in buffer
      */
     int push(uint8_t* data, size_t N) {
-        size_t t = persist->tail;
-        auto used = (t + MAX_SIZE - persist->head) % MAX_SIZE;
+        size_t t = persist->tail.load(std::memory_order_acquire);
+        auto used = (t + MAX_SIZE - persist->head.load(std::memory_order_acquire)) % MAX_SIZE;
         if (used + N < MAX_SIZE) {
             auto k = t + N;
             if(k > MAX_SIZE) {
                 k = k - MAX_SIZE;
                 memcpy(buffer + t, data, k);
                 memcpy(buffer, data + k, N - k);
-                persist->tail = N - k;
+                persist->tail.store(N - k, std::memory_order_release);
             } else {
                 memcpy(buffer + t, data, N);
-                persist->tail += N;
+                persist->tail.store(t + N, std::memory_order_release);
             }
             return 0;
         } else {
@@ -132,18 +133,18 @@ struct ringbuf_t {
      * @return int return 0 if pop success, or current used size in buffer
      */
     int pop(uint8_t* data, size_t N) {
-        size_t h = persist->head;
-        auto used = (persist->tail - h + MAX_SIZE) % MAX_SIZE;
+        size_t h = persist->head.load(std::memory_order_acquire);
+        auto used = (persist->tail.load(std::memory_order_acquire) - h + MAX_SIZE) % MAX_SIZE;
         if (used >= N) {
             auto k = h + N;
             if(k > MAX_SIZE) {
                 k = k - MAX_SIZE;
                 memcpy(data, buffer + h, k);
                 memcpy(data + k, buffer, N - k);
-                persist->head = N - k;
+                persist->head.store(N - k, std::memory_order_release);
             } else {
                 memcpy(data, buffer + h, N);
-                persist->head += N;
+                persist->head.store(h + N, std::memory_order_release);
             }
             return 0;
         } else {
@@ -153,10 +154,10 @@ struct ringbuf_t {
     }
 
     size_t size() const {
-        return (persist->tail - persist->head + MAX_SIZE) % MAX_SIZE;
+        return (persist->tail.load(std::memory_order_acquire) - persist->head.load(std::memory_order_acquire) + MAX_SIZE) % MAX_SIZE;
     }
     size_t capacity() const {
-        return persist->buffer_size;
+        return persist->buffer_size.load(std::memory_order_acquire);
     }
 
 
