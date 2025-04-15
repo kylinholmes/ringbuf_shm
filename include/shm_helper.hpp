@@ -42,7 +42,7 @@ namespace shm_helper {
             }
 
             shm_t* shm = new shm_t(fd);
-            std::strncpy(shm->key, key, MAX_KEY_LENGTH);
+            std::strncpy(shm->key, key, MAX_KEY_LENGTH -1);
             if(!shm->shm_truncate(size)) {
                 close(fd);
                 perror("shm_truncate failed");
