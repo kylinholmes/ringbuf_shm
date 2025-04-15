@@ -100,24 +100,45 @@ struct ringbuf_t {
      * @return int return 0 if push success, or current used size in buffer
      */
     int push(uint8_t* data, size_t N) {
-        size_t t = persist->tail.load(std::memory_order_acquire);
-        auto used = (t + MAX_SIZE - persist->head.load(std::memory_order_acquire)) % MAX_SIZE;
-        if (used + N < MAX_SIZE) {
-            auto k = t + N;
-            if(k > MAX_SIZE) {
-                k = k - MAX_SIZE;
-                memcpy(buffer + t, data, k);
-                memcpy(buffer, data + k, N - k);
-                persist->tail.store(N - k, std::memory_order_release);
-            } else {
-                memcpy(buffer + t, data, N);
-                persist->tail.store(t + N, std::memory_order_release);
+        size_t current_tail;
+        size_t new_tail;
+        size_t current_head;
+        size_t available_space;
+        
+        do {
+            // 获取当前tail和head（acquire保证看到最新值）
+            current_tail = persist->tail.load(std::memory_order_acquire);
+            current_head = persist->head.load(std::memory_order_acquire);
+            
+            // 计算可用空间（考虑环形缓冲区回绕）
+            available_space = (current_head + MAX_SIZE - current_tail - 1) % MAX_SIZE;
+            
+            // 检查是否有足够空间
+            if (available_space < N) {
+                return available_space; // 缓冲区空间不足
             }
-            return 0;
+            
+            // 计算新的tail位置
+            new_tail = (current_tail + N) % MAX_SIZE;
+            
+            // 使用CAS原子更新tail，防止多生产者竞争
+        } while (!persist->tail.compare_exchange_weak(
+            current_tail, new_tail,
+            std::memory_order_release,
+            std::memory_order_relaxed));
+        
+        // 成功获得空间，执行数据拷贝
+        if (current_tail + N > MAX_SIZE) {
+            // 需要回绕的情况
+            size_t first_chunk = MAX_SIZE - current_tail;
+            memcpy(buffer + current_tail, data, first_chunk);
+            memcpy(buffer, data + first_chunk, N - first_chunk);
         } else {
-            // Buffer is full
-            return used;
+            // 不需要回绕的情况
+            memcpy(buffer + current_tail, data, N);
         }
+        
+        return 0; // 成功
     }
 
     template<typename T>
@@ -138,28 +159,51 @@ struct ringbuf_t {
      * @return int return 0 if pop success, or current used size in buffer
      */
     int pop(uint8_t* data, size_t N) {
-        size_t h = persist->head.load(std::memory_order_acquire);
-        auto used = (persist->tail.load(std::memory_order_acquire) - h + MAX_SIZE) % MAX_SIZE;
-        if (used >= N) {
-            auto k = h + N;
-            if(k > MAX_SIZE) {
-                k = k - MAX_SIZE;
-                memcpy(data, buffer + h, k);
-                memcpy(data + k, buffer, N - k);
-                persist->head.store(N - k, std::memory_order_release);
-            } else {
-                memcpy(data, buffer + h, N);
-                persist->head.store(h + N, std::memory_order_release);
+        size_t current_head;
+        size_t new_head;
+        size_t current_tail;
+        size_t available_data;
+        
+        do {
+            // 获取当前head和tail（acquire保证看到最新值）
+            current_head = persist->head.load(std::memory_order_acquire);
+            current_tail = persist->tail.load(std::memory_order_acquire);
+            
+            // 计算可用数据量（考虑环形缓冲区回绕）
+            available_data = (current_tail + MAX_SIZE - current_head) % MAX_SIZE;
+            
+            // 检查是否有足够数据
+            if (available_data < N) {
+                return available_data == 0 ? -1 : static_cast<int>(available_data);
             }
-            return 0;
+            
+            // 计算新的head位置
+            new_head = (current_head + N) % MAX_SIZE;
+            
+            // 使用CAS原子更新head，防止多消费者竞争
+        } while (!persist->head.compare_exchange_weak(
+            current_head, new_head,
+            std::memory_order_release,
+            std::memory_order_relaxed));
+        
+        // 成功获得数据，执行数据拷贝
+        if (current_head + N > MAX_SIZE) {
+            // 需要回绕的情况
+            size_t first_chunk = MAX_SIZE - current_head;
+            memcpy(data, buffer + current_head, first_chunk);
+            memcpy(data + first_chunk, buffer, N - first_chunk);
         } else {
-            // Buffer is empty or not enough data to pop
-            return used ==0? -1: used;
+            // 不需要回绕的情况
+            memcpy(data, buffer + current_head, N);
         }
+        
+        return 0; // 成功
     }
 
-    size_t size() const {
-        return (persist->tail.load(std::memory_order_acquire) - persist->head.load(std::memory_order_acquire) + MAX_SIZE) % MAX_SIZE;
+    size_t available() const {
+        size_t h = persist->head.load(std::memory_order_acquire);
+        size_t t = persist->tail.load(std::memory_order_acquire);
+        return (h + MAX_SIZE - t - 1) % MAX_SIZE;
     }
     size_t capacity() const {
         return persist->buffer_size.load(std::memory_order_acquire);
