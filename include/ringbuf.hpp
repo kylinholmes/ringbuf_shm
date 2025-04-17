@@ -262,7 +262,7 @@ struct ringbuf_t {
             return data;
         }
         iterator_t<T>& begin() {
-
+            return *this;
         }
         iterator_t<T>& end() {
             return *this;
