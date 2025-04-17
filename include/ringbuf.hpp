@@ -11,7 +11,6 @@
 
 #ifndef RINGBUF_H
 #define RINGBUF_H
-#include "memcpy_helper.hpp"
 
 #include <atomic>
 #include <cstdio>
@@ -131,11 +130,11 @@ struct ringbuf_t {
         if (current_tail + N > MAX_SIZE) {
             // 需要回绕的情况
             size_t first_chunk = MAX_SIZE - current_tail;
-            fast_memcpy(buffer + current_tail, data, first_chunk);
-            fast_memcpy(buffer, data + first_chunk, N - first_chunk);
+            memcpy(buffer + current_tail, data, first_chunk);
+            memcpy(buffer, data + first_chunk, N - first_chunk);
         } else {
             // 不需要回绕的情况
-            fast_memcpy(buffer + current_tail, data, N);
+            memcpy(buffer + current_tail, data, N);
         }
         
         return 0; // 成功
@@ -190,11 +189,11 @@ struct ringbuf_t {
         if (current_head + N > MAX_SIZE) {
             // 需要回绕的情况
             size_t first_chunk = MAX_SIZE - current_head;
-            fast_memcpy(data, buffer + current_head, first_chunk);
-            fast_memcpy(data + first_chunk, buffer, N - first_chunk);
+            memcpy(data, buffer + current_head, first_chunk);
+            memcpy(data + first_chunk, buffer, N - first_chunk);
         } else {
             // 不需要回绕的情况
-            fast_memcpy(data, buffer + current_head, N);
+            memcpy(data, buffer + current_head, N);
         }
         
         return 0; // 成功
