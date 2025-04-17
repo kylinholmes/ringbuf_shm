@@ -252,10 +252,10 @@ struct ringbuf_t {
         T data;
     public:
         iterator_t(ringbuf_t<MAX_SIZE, Allocator>& rb) : rb(rb) {
-            while(rb.pop(reinterpret_cast<uint8_t*>(&data), sizeof(T)) == 0);
+            while(rb.pop(reinterpret_cast<uint8_t*>(&data), sizeof(T)) != 0);
         }
         iterator_t<T>& operator++() {
-            while(rb.pop(reinterpret_cast<uint8_t*>(&data), sizeof(T)) == 0);
+            while(rb.pop(reinterpret_cast<uint8_t*>(&data), sizeof(T)) != 0);
             return *this;
         }
         T operator*() const {
