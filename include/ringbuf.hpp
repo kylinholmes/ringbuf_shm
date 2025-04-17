@@ -245,6 +245,45 @@ struct ringbuf_t {
     auto make_pair() {
         return std::make_pair(sender_t(*this), receiver_t(*this));
     }
+
+    template<typename T>
+    class iterator_t {
+        ringbuf_t<MAX_SIZE, Allocator>& rb;
+        T data;
+    public:
+        iterator_t(ringbuf_t<MAX_SIZE, Allocator>& rb) : rb(rb) {
+            while(rb.pop(reinterpret_cast<uint8_t*>(&data), sizeof(T)) == 0);
+        }
+        iterator_t<T>& operator++() {
+            while(rb.pop(reinterpret_cast<uint8_t*>(&data), sizeof(T)) == 0);
+            return *this;
+        }
+        T operator*() const {
+            return data;
+        }
+        iterator_t<T>& begin() {
+
+        }
+        iterator_t<T>& end() {
+            return *this;
+        }
+        bool operator!=(const iterator_t<T>& other) const {
+            return true;
+        }
+        bool operator==(const iterator_t<T>& other) const {
+            return false;
+        }
+
+
+
+    };
+    
+    template<typename T>
+    iterator_t<T> iter() {
+        return iterator_t<T>{*this};
+    }
+
+
 };
 
 }
