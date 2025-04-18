@@ -25,7 +25,7 @@ public:
             std::bind(std::forward<F>(f), std::forward<Args>(args)...)
         );
         auto res = task->get_future();
-        rb.push([task]() { (*task)(); });
+        rb.push([task=std::move(task)]() { (*task)(); });
         return res;
     }
     auto push(std::function<void()> f) {
