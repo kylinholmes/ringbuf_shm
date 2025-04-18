@@ -12,6 +12,7 @@ auto not_ns_ts() {
 int main() {
     using namespace std::chrono_literals;
     auto rb = ringbuf::ringbuf_t<4096, shm_helper::shm_t>("my_shm");
+    // rb.persist->buffer_size.compare_exchange_strong(rb.persist->buffer_size, 4096);
 
     for(auto p1=0; p1 < 1000; p1++) {
         auto ts=  not_ns_ts();

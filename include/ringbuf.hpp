@@ -27,10 +27,9 @@ namespace ringbuf {
 
 #pragma pack(push, 1) 
 struct persist_t {
-    std::atomic<size_t> head;     // Index of the head of the buffer
-    std::atomic<size_t> tail;     // Index of the tail of the buffer
-    std::atomic<size_t> buffer_size; // Maximum size of the buffer
-    std::atomic<size_t> padding;
+    alignas(64) std::atomic<size_t> head;     // Index of the head of the buffer
+    alignas(64) std::atomic<size_t> tail;     // Index of the tail of the buffer
+    alignas(64) std::atomic<size_t> buffer_size; // Maximum size of the buffer
 };
 #pragma pack(pop)
 

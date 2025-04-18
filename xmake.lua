@@ -29,3 +29,9 @@ target("p2")
     add_files("test/p2.cpp") -- 添加源文件
     add_links("pthread") -- 链接 pthread 库
     add_links("rt") -- 链接 rt 库
+
+target("thp")
+    set_kind("binary") -- 目标类型为可执行文件
+    add_files("test/threadpool.cpp") -- 添加源文件
+    add_links("pthread") -- 链接 pthread 库
+    add_links("rt") -- 链接 rt 库
