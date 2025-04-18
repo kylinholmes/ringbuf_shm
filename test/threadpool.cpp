@@ -28,6 +28,9 @@ public:
         rb.push([task]() { (*task)(); });
         return res;
     }
+    auto push(std::function<void()> f) {
+        rb.push(f);
+    }
     ~thread_pool_t() {
         for (auto& t : th) {
             if (t.joinable()) {
@@ -39,13 +42,8 @@ public:
 
 int main () {
     thread_pool_t tp(4);
-    auto f1 = tp.push([](int a, int b) {
+    tp.push([a=1, b=2]() {
         std::cout << "thread:" << std::this_thread::get_id() << ", a:" << a << ", b:" << b << std::endl;
-        return a + b;
-    }, 1, 2);
-    auto f2 = tp.push([](std::string a, std::string b) {
-        return a + b;
-    }, "3", "4");
-    // std::cout << "f1:" << f1.get() << ", f2:" << f2.get() << std::endl;
+    });
 
 }
