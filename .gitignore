@@ -3,6 +3,7 @@
 **/.DS_Store
 .xmake
 .vscode
+**result.csv
 
 # Prerequisites
 *.d
